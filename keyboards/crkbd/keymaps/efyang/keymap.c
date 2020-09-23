@@ -18,6 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include QMK_KEYBOARD_H
 
+#ifdef OLED_DRIVER_ENABLE
+    #include "bongo_animation.h"
+#endif
+
 
 #ifdef RGBLIGHT_ENABLE
 //Following line allows macro to read current RGB settings
@@ -99,137 +103,66 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   )
 };
 
-int RGB_current_mode;
 
-void persistent_default_layer_set(uint16_t default_layer) {
-  eeconfig_update_default_layer(default_layer);
-  default_layer_set(default_layer);
+layer_state_t layer_state_set_user(layer_state_t state) {
+    return update_tri_layer_state(state, _LOWER, _RAISE, _ADJUST);
 }
 
-// Setting ADJUST layer RGB back to default
-void update_tri_layer_RGB(uint8_t layer1, uint8_t layer2, uint8_t layer3) {
-  if (IS_LAYER_ON(layer1) && IS_LAYER_ON(layer2)) {
-    layer_on(layer3);
-  } else {
-    layer_off(layer3);
-  }
+#ifdef OLED_DRIVER_ENABLE
+
+/*oled_rotation_t oled_init_user(oled_rotation_t rotation) {*/
+    /*if (is_keyboard_master()) {*/
+        /*return OLED_ROTATION_270;*/
+    /*} else {*/
+        /*return rotation;*/
+    /*}*/
+/*}*/
+
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    return OLED_ROTATION_180;
 }
 
-void matrix_init_user(void) {
-    #ifdef RGBLIGHT_ENABLE
-      RGB_current_mode = rgblight_config.mode;
-    #endif
-    //SSD1306 OLED init, make sure to add #define SSD1306OLED in config.h
-    #ifdef SSD1306OLED
-        iota_gfx_init(!has_usb());   // turns on the display
-    #endif
+static void render_status(void) {
+    // Host Keyboard Layer Status
+    oled_write_P(PSTR("Layer: "), false);
+    switch (get_highest_layer(layer_state)) {
+        case _QWERTY:
+            oled_write_P(PSTR("QWERTY"), false);
+            break;
+        case _LOWER:
+            oled_write_P(PSTR("Numpad"), false);
+            break;
+        case _RAISE:
+            oled_write_P(PSTR("F Keys"), false);
+            break;
+        case _ADJUST:
+            oled_write_P(PSTR("RGB   "), false);
+            break;
+        default:
+            oled_write_P(PSTR("Undefined"), false);
+    }
+
+    //Host Keyboard LED Status
+    led_t led_state = host_keyboard_led_state();
+    oled_write_P(led_state.num_lock ? PSTR("NUM ") : PSTR("       "), false);
+    oled_write_P(led_state.caps_lock ? PSTR("CAPS ") : PSTR("       "), false);
+    oled_write_P(led_state.scroll_lock ? PSTR("SCRL") : PSTR("       "), false);
 }
 
-//SSD1306 OLED update loop, make sure to add #define SSD1306OLED in config.h
-#ifdef SSD1306OLED
+char wpm_str[9];
 
-// When add source files to SRC in rules.mk, you can use functions.
-const char *read_layer_state(void);
-const char *read_logo(void);
-void set_keylog(uint16_t keycode, keyrecord_t *record);
-const char *read_keylog(void);
-const char *read_keylogs(void);
-
-// const char *read_mode_icon(bool swap);
-// const char *read_host_led_state(void);
-// void set_timelog(void);
-// const char *read_timelog(void);
-
-void matrix_scan_user(void) {
-   iota_gfx_task();
+void oled_task_user(void) {
+    if (is_keyboard_master()) {
+        //render_skull();
+        //oled_set_cursor(7,6);
+        render_status();
+     // Renders the current keyboard state (layer, lock, caps, scroll, etc)
+    } else {
+        render_anim();
+        oled_set_cursor(0,6);
+        sprintf(wpm_str, "WPM: %03d", get_current_wpm());
+        oled_write(wpm_str, false);
+    }
 }
 
-void matrix_render_user(struct CharacterMatrix *matrix) {
-  if (is_master) {
-    // If you want to change the display of OLED, you need to change here
-    matrix_write_ln(matrix, read_layer_state());
-    matrix_write_ln(matrix, read_keylog());
-    //matrix_write_ln(matrix, read_keylogs());
-    //matrix_write_ln(matrix, read_mode_icon(keymap_config.swap_lalt_lgui));
-    //matrix_write_ln(matrix, read_host_led_state());
-    //matrix_write_ln(matrix, read_timelog());
-  } else {
-    matrix_write(matrix, read_logo());
-  }
-}
-
-void matrix_update(struct CharacterMatrix *dest, const struct CharacterMatrix *source) {
-  if (memcmp(dest->display, source->display, sizeof(dest->display))) {
-    memcpy(dest->display, source->display, sizeof(dest->display));
-    dest->dirty = true;
-  }
-}
-
-void iota_gfx_task_user(void) {
-  struct CharacterMatrix matrix;
-  matrix_clear(&matrix);
-  matrix_render_user(&matrix);
-  matrix_update(&display, &matrix);
-}
-#endif//SSD1306OLED
-
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  if (record->event.pressed) {
-#ifdef SSD1306OLED
-    set_keylog(keycode, record);
 #endif
-    // set_timelog();
-  }
-
-  switch (keycode) {
-    case QWERTY:
-      if (record->event.pressed) {
-        persistent_default_layer_set(1UL<<_QWERTY);
-      }
-      return false;
-    case LOWER:
-      if (record->event.pressed) {
-        layer_on(_LOWER);
-        update_tri_layer_RGB(_LOWER, _RAISE, _ADJUST);
-      } else {
-        layer_off(_LOWER);
-        update_tri_layer_RGB(_LOWER, _RAISE, _ADJUST);
-      }
-      return false;
-    case RAISE:
-      if (record->event.pressed) {
-        layer_on(_RAISE);
-        update_tri_layer_RGB(_LOWER, _RAISE, _ADJUST);
-      } else {
-        layer_off(_RAISE);
-        update_tri_layer_RGB(_LOWER, _RAISE, _ADJUST);
-      }
-      return false;
-    case ADJUST:
-        if (record->event.pressed) {
-          layer_on(_ADJUST);
-        } else {
-          layer_off(_ADJUST);
-        }
-        return false;
-    case RGB_MOD:
-      #ifdef RGBLIGHT_ENABLE
-        if (record->event.pressed) {
-          rgblight_mode(RGB_current_mode);
-          rgblight_step();
-          RGB_current_mode = rgblight_config.mode;
-        }
-      #endif
-      return false;
-    case RGBRST:
-      #ifdef RGBLIGHT_ENABLE
-        if (record->event.pressed) {
-          eeconfig_update_rgblight_default();
-          rgblight_enable();
-          RGB_current_mode = rgblight_config.mode;
-        }
-      #endif
-      break;
-  }
-  return true;
-}

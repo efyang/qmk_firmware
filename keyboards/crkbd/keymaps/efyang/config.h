@@ -28,7 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // #define MASTER_RIGHT
 // #define EE_HANDS
 
-#define SSD1306OLED
+
+#ifdef OLED_DRIVER_ENABLE
+    #define OLED_TIMEOUT 300000
+#endif
 
 #define USE_SERIAL_PD2
 
@@ -44,3 +47,5 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     #define RGBLIGHT_SAT_STEP 17
     #define RGBLIGHT_VAL_STEP 17
 #endif
+
+#define BONGO_PARTY_HAT
