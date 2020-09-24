@@ -119,7 +119,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 /*}*/
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
-    return OLED_ROTATION_180;
+    return OLED_ROTATION_270;
 }
 
 static void render_status(void) {
@@ -152,15 +152,15 @@ static void render_status(void) {
 char wpm_str[9];
 
 void oled_task_user(void) {
-    if (is_keyboard_master()) {
+    if (!is_keyboard_master()) {
         //render_skull();
         //oled_set_cursor(7,6);
         render_status();
      // Renders the current keyboard state (layer, lock, caps, scroll, etc)
     } else {
         render_anim();
-        oled_set_cursor(0,6);
-        sprintf(wpm_str, "WPM: %03d", get_current_wpm());
+        oled_set_cursor(0, 11);
+        sprintf(wpm_str, " WPM   %03d", get_current_wpm());
         oled_write(wpm_str, false);
     }
 }

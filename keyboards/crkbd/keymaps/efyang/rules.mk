@@ -1,6 +1,7 @@
 OLED_DRIVER_ENABLE = yes
 WPM_ENABLE = yes
 RGBLIGHT_ENABLE = yes
+RGB_UNDERGLOW_ENABLE = yes
 
 ifdef OLED_DRIVER_ENABLE
   # Include my fancy rgb functions source here
