@@ -1,7 +1,9 @@
 OLED_DRIVER_ENABLE = yes
 WPM_ENABLE = yes
-RGBLIGHT_ENABLE = yes
-RGB_UNDERGLOW_ENABLE = yes
+RGBLIGHT_ENABLE = no
+RGB_MATRIX_ENABLE = WS2812
+
+RGB_UNDERGLOW_ENABLE = no
 
 ifdef OLED_DRIVER_ENABLE
   # Include my fancy rgb functions source here
