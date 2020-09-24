@@ -17,11 +17,11 @@
 // #define SLEEP_TIMER 60000 // should sleep after this period of 0 wpm, needs fixing
 
 #define PAD_ROW_SIZE 32
-#define PAD_ROW 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-#define PADDING PAD_ROW, PAD_ROW, PAD_ROW, PAD_ROW, PAD_ROW, PAD_ROW, PAD_ROW, PAD_ROW, PAD_ROW
 #define PAD_ROWS 8
 #define ANIM_SIZE 160// number of bytes in array, minimize for adequate firmware size, max is 1024
-#define PADDED_SIZE 160 + PAD_ROWS * PAD_ROW_SIZE// number of bytes in array, minimize for adequate firmware size, max is 1024
+#define PADDED_SIZE 160 + PAD_ROWS * PAD_ROW_SIZE
+
+// frame used to pad animation
 const char work_frame[PADDED_SIZE];
 
 #ifndef BONGO_PARTY_HAT
@@ -324,7 +324,7 @@ uint8_t current_tap_frame = 0;
 
 #define max(x,y) (((x) >= (y)) ? (x) : (y))
 
-// Images credit j-inc(/James Incandenza) and pixelbenny. Credit to obosob for initial animation approach.
+// Credit to obosob for initial animation approach.
 void render_anim(void) {
     //assumes 1 frame prep stage
     void animation_phase(void) {
@@ -340,7 +340,6 @@ void render_anim(void) {
         }
 
         if (next_frame != NULL) {
-            /*memcpy_P((void*)&work_frame[PADDED_SIZE - ANIM_SIZE], next_frame, ANIM_SIZE);*/
             memcpy_P((void*)&work_frame[PADDED_SIZE - ANIM_SIZE], next_frame, ANIM_SIZE);
             oled_write_raw(work_frame, PADDED_SIZE);
         }
@@ -349,6 +348,7 @@ void render_anim(void) {
     if(get_current_wpm() != 0) {
         oled_on(); // not essential but turns on animation OLED with any alpha keypress
 
+        // reduce frame delay as wpm increases
         if(timer_elapsed32(anim_timer) >
                 max(ANIM_FRAME_DURATION - (uint32_t)get_current_wpm()/WPM_FRAME_FACTOR, MIN_ANIM_FRAME_DURATION)) {
             anim_timer = timer_read32();
