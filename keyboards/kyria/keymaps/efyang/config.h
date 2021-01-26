@@ -28,6 +28,11 @@
   #define RGBLIGHT_VAL_STEP 8
 #endif
 
+#ifdef TRACKBALL_ENABLE
+  #define TRACKBALL_ORIENTATION 2
+  #define TRACKBALL_RGBLIGHT 2
+#endif
+
 // If you are using an Elite C rev3 on the slave side, uncomment the lines below:
 // #define SPLIT_USB_DETECT
 // #define NO_USB_STARTUP_CHECK

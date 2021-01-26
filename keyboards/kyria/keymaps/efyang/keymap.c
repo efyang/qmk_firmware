@@ -14,19 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include QMK_KEYBOARD_H
+#include "i2c_master.h"
+#include "math.h"
 
 enum layers {
     _QWERTY = 0,
     _LOWER,
     _RAISE,
-    _ADJUST
+    _ADJUST,
+    _MOUSE
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_QWERTY] = LAYOUT(KC_TAB, KC_Q, KC_W, KC_E, KC_R, KC_T, KC_Y, KC_U, KC_I, KC_O, KC_P, KC_BSPC, KC_ESC, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, KC_SCLN, KC_QUOT, KC_LSFT, KC_Z, KC_X, KC_C, KC_V, KC_B, KC_NO, KC_NO, KC_NO, KC_NO, KC_N, KC_M, KC_COMM, KC_DOT, KC_SLSH, KC_RSFT, KC_LGUI, KC_LALT, KC_LCTL, KC_SPC, MO(1), MO(2), KC_ENT, KC_RCTL, KC_RALT, KC_RGUI),
 	[_LOWER] = LAYOUT(KC_TRNS, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, KC_TRNS, KC_LCTL, KC_TRNS, KC_TRNS, KC_TRNS, KC_GRV, KC_TRNS, KC_MINS, KC_EQL, KC_LBRC, KC_RBRC, KC_BSLS, KC_RCTL, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_NO, KC_NO, KC_NO, KC_NO, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS),
 	[_RAISE] = LAYOUT(KC_TRNS, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_DEL, KC_LCTL, KC_F11, KC_F12, KC_TRNS, KC_PSCR, KC_PAUS, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_HOME, KC_END, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_NO, KC_NO, KC_NO, KC_NO, KC_APP, KC_PGDN, KC_PGUP, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS),
-	[_ADJUST] = LAYOUT(RESET, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_TRNS, RGB_TOG, RGB_MOD, RGB_HUI, RGB_SAI, RGB_VAI, RGB_SPI, KC_MRWD, KC_MPLY, KC_MSTP, KC_MFFD, KC_MUTE, KC_TRNS, KC_TRNS, RGB_RMOD, RGB_HUD, RGB_SAD, RGB_VAD, RGB_SPD, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_VOLD, KC_VOLU, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS)
+	[_ADJUST] = LAYOUT(RESET, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_TRNS, RGB_TOG, RGB_MOD, RGB_HUI, RGB_SAI, RGB_VAI, RGB_SPI, KC_MRWD, KC_MPLY, KC_MSTP, KC_MFFD, KC_MUTE, KC_TRNS, KC_TRNS, RGB_RMOD, RGB_HUD, RGB_SAD, RGB_VAD, RGB_SPD, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_VOLD, KC_VOLU, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS),
+	[_MOUSE] = LAYOUT(TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), KC_BTN4, TO(0), KC_WH_U, TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), KC_BTN5, KC_BTN1, KC_BTN3, KC_BTN2, TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), KC_WH_D, TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0), TO(0))
 };
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -81,6 +85,9 @@ static void render_status(void) {
         case _ADJUST:
             oled_write_P(PSTR("Adjust\n"), false);
             break;
+        case _MOUSE:
+            oled_write_P(PSTR("Mouse\n"), false);
+            break;
         default:
             oled_write_P(PSTR("Undefined\n"), false);
     }
@@ -118,6 +125,39 @@ void encoder_update_user(uint8_t index, bool clockwise) {
         } else {
             tap_code(KC_PGUP);
         }
+    }
+}
+#endif
+
+
+#ifdef TRACKBALL_ENABLE
+#define TR_HIS 10
+static trackball_record_t history[TR_HIS];
+void matrix_init_user() {
+    i2c_init();
+}
+
+static int16_t tb_timer = 0;
+void process_trackball_user(trackball_record_t *record) {
+    tb_timer = timer_read() | 1;
+    if (record->type & TB_MOVED) {
+        layer_on(_MOUSE);
+        for (int i = 0; i < TR_HIS - 1; i++) {
+            history[i] = history[i + 1];
+        }
+        history[TR_HIS - 1] = *record;
+        for (int i = 0; i < TR_HIS - 1; i++) {
+            record->x += history[i].x/pow(1.5, TR_HIS - i);
+            record->y += history[i].y/pow(1.5, TR_HIS - i);
+        }
+
+        /*double angle_rad = atan2(record->y, record->x);
+        double vector_length = sqrt(pow(record->x, 2) + pow(record->y, 2));
+        float power = 3;
+        double newlen = pow(vector_length, power);*/
+        double veclen_sq = pow(record->x, 2) + pow(record->y, 2);
+        record->x *= veclen_sq;
+        record->y *= veclen_sq;
     }
 }
 #endif
