@@ -17,22 +17,36 @@
 #pragma once
 #define MASTER_RIGHT
 
+// define this if compiling the left side
+//#define COMPILE_LEFT
+
 #ifdef OLED_DRIVER_ENABLE
-  #define OLED_DISPLAY_128X64
+#    define OLED_DISPLAY_128X64
 #endif
 
 #ifdef RGBLIGHT_ENABLE
-  #define RGBLIGHT_ANIMATIONS
-  #define RGBLIGHT_HUE_STEP 8
-  #define RGBLIGHT_SAT_STEP 8
-  #define RGBLIGHT_VAL_STEP 8
+//#    define RGBLIGHT_EFFECT_BREATHING
+//#    define RGBLIGHT_EFFECT_RAINBOW_MOOD
+//#    define RGBLIGHT_EFFECT_RAINBOW_SWIRL
+//#    define RGBLIGHT_EFFECT_STATIC_GRADIENT
+#    define RGBLIGHT_HUE_STEP 8
+#    define RGBLIGHT_SAT_STEP 8
+#    define RGBLIGHT_VAL_STEP 8
+#endif
+
+#ifdef COMPILE_LEFT
+#    undef TRACKBALL_ENABLE
 #endif
 
 #ifdef TRACKBALL_ENABLE
-  #define TRACKBALL_ORIENTATION 2
-  #define TRACKBALL_RGBLIGHT 2
+#    define TRACKBALL_ORIENTATION 1
+//#    define TRACKBALL_RGBLIGHT 2
 #endif
 
+#ifdef COMPILE_LEFT
+#    define NO_ACTION_TAPPING
+#    define TAPPING_FORCE_HOLD
+#endif
 // If you are using an Elite C rev3 on the slave side, uncomment the lines below:
 // #define SPLIT_USB_DETECT
 // #define NO_USB_STARTUP_CHECK
